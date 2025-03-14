@@ -126,6 +126,40 @@ This consolidated README provides an overview of the AWS Entity Resolution Servi
 | [Implementation Guide](implementation-plan.md) | Step-by-step implementation process |
 | [Resource Configuration Guide](resource-configuration-guide.md) | Detailed configuration for Glue Tables, S3, and KMS |
 | [Security Considerations](security-considerations.md) | In-depth security controls and compliance |
+| [Contributing Guide](docs/CONTRIBUTING.md) | How to contribute to documentation |
+| [Validation Guide](docs/VALIDATION.md) | Documentation and Mermaid diagram validation |
+
+### Documentation Quality Tools
+
+This repository uses pre-commit hooks to ensure high-quality documentation:
+
+- **Markdown Linting**: Enforces consistent styling and formatting
+- **Mermaid Diagram Validation**: Ensures diagrams have correct syntax
+- **Automated Formatting**: Maintains consistent document formatting
+
+To use these tools:
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Or run the validation script:
+```bash
+./validate-docs.sh
+```
+
+## Development
+
+### Mermaid Diagrams
+
+This project uses Mermaid for creating diagrams in markdown files. To ensure diagram validity:
+
+1. **Linting**: Run `./lint-mermaid.sh` to validate all Mermaid diagrams
+2. **Pre-commit Hook**: Mermaid diagrams are automatically checked before commits
+3. **Documentation**: See [Mermaid Linting Guide](docs/MERMAID-LINTING.md) for common issues and solutions
+4. **Live Editor**: Use [Mermaid Live Editor](https://mermaid.live/) to test diagrams before adding them
+
+To fix a diagram, check the error message from the linter, refer to the linting guide, and make the necessary corrections.
 
 ## Troubleshooting
 

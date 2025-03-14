@@ -1,0 +1,23 @@
+{
+  "name": "mermaid-linter",
+  "version": "1.0.0",
+  "description": "Mermaid diagram linting setup using industry-standard tools",
+  "scripts": {
+    "lint": "./lint-mermaid.sh",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^10.3.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "mermaid",
+    "lint",
+    "diagram",
+    "markdown"
+  ],
+  "author": "",
+  "license": "MIT"
+}

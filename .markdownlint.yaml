@@ -1,0 +1,51 @@
+---
+# Default state for all rules
+default: true
+
+# Line length
+MD013:
+  line_length: 100
+  code_blocks: false
+  tables: false
+
+# Allow multiple headings with the same content
+MD024:
+  siblings_only: true
+
+# Allow trailing punctuation in headings
+MD026: false
+
+# Allow inline HTML (needed for Mermaid diagrams)
+MD033: false
+
+# Allow bare URLs
+MD034: false
+
+# First line in a file should be a top-level heading
+MD041: true
+
+# Emphasis used instead of heading
+MD036: false
+
+# Allow multiple top-level headings
+MD025: false
+
+# Ordered list item prefix
+MD029:
+  style: "ordered"
+
+# Fenced code blocks should have a language specified
+MD040: true
+
+# Rules for code blocks in lists
+MD031:
+  list_items: true
+  
+# Blank lines around code blocks
+MD012:
+  maximum: 1
+
+# Special rules for Mermaid diagrams
+# Enable Mermaid blocks to be properly recognized and not trigger false positives
+MD046:
+  style: "consistent" 

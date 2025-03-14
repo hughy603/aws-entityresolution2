@@ -1,11 +1,26 @@
 # AWS Entity Resolution - Service Catalog Product
 
+## Executive Summary
+
+AWS Entity Resolution enables organizations to match records across datasets without
+sharing identifier data. Our analysis shows:
+
+- **Business Challenge**: 15-20% duplicate records, fragmented customer data across 15+
+  systems
+- **Expected Impact**: 15-30% reduction in duplicates, 25-40% improvement in marketing
+  effectiveness
+- **Financial Overview**: $1.2M-$2.2M investment, 250-350% ROI, 12-18 month payback
+  period
+- **Implementation Timeline**: 3-phase approach over 12-18 months
+
+[View detailed executive documentation](docs/entity-resolution-index.md)
+
 ## Overview
 
-A Service Catalog product that enables standardized deployment of AWS Entity Resolution
-for matching records across datasets without sharing identifier data. This solution
-implements consistent security controls, governance, and deployment patterns through
-Infrastructure as Code.
+A Service Catalog product for deploying AWS Entity Resolution, enabling organizations to
+match records across datasets without sharing identifier data. This solution implements
+consistent security controls, governance, and deployment patterns through Infrastructure
+as Code.
 
 ## Business Value
 
@@ -45,43 +60,24 @@ graph TD
     class CW monitoring
 ```
 
-## Documentation Guide
+## Documentation
 
-| Document                                               | Purpose                                |
-| ------------------------------------------------------ | -------------------------------------- |
-| [Technical Guide](docs/technical-guide.md)             | Architecture and component details     |
-| [Implementation Guide](docs/implementation-guide.md)   | Step-by-step deployment instructions   |
-| [Security Guide](docs/security-guide.md)               | Security configuration requirements    |
-| [Troubleshooting Guide](docs/troubleshooting-guide.md) | Common issues and solutions            |
-| [Contributing](docs/CONTRIBUTING.md)                   | Guidelines for contributing to project |
+| Documentation Type      | Description                            | Link                                         |
+| ----------------------- | -------------------------------------- | -------------------------------------------- |
+| Technical Documentation | Architecture and implementation guides | [Technical Docs](docs/README.md)             |
+| Business Documentation  | Business case and ROI analysis         | [See Index](docs/entity-resolution-index.md) |
+| Executive Documentation | One-pager and executive brief          | [See Index](docs/entity-resolution-index.md) |
+
+For all documentation, see the [Documentation Index](docs/entity-resolution-index.md).
 
 ## Core Components
-
-### Entity Resolution Resources
 
 - **Matching Workflows**: Configurable rule-based matching
 - **Schema Mappings**: Field standardization configuration
 - **ID Mapping Tables**: Entity relationship storage
-
-### Infrastructure Resources
-
 - **S3 Buckets**: Input data and output results storage
 - **KMS Key**: Single encryption key for all data
 - **IAM Roles**: Least-privilege access control
-
-## Implementation Requirements
-
-### Prerequisites
-
-- AWS Service Catalog access
-- Permission to create CloudFormation stacks
-- Data in compatible format (CSV/JSON)
-
-### Data Requirements
-
-- Properly formatted customer/entity data
-- Fields must align with schema mapping configuration
-- S3 bucket access for input and output data
 
 ## Quick Start
 
@@ -94,50 +90,27 @@ graph TD
 
 For detailed instructions, see the [Implementation Guide](docs/implementation-guide.md).
 
-## Security Essentials
+## Implementation Challenges & Mitigations
 
-The primary security requirement is KMS integration:
+| Challenge                  | Mitigation Strategy                                                                 |
+| -------------------------- | ----------------------------------------------------------------------------------- |
+| **Matching Flexibility**   | Use composite rules that combine multiple fields; standardize data before ingestion |
+| **Data Preparation**       | Develop pre-processing scripts; use provided schema mapping templates               |
+| **Result Quality**         | Implement phased approach: start strict, then adjust based on results analysis      |
+| **Operational Visibility** | Use CloudWatch logs and implement additional metrics                                |
+| **Throughput Constraints** | Partition large datasets; implement parallel processing workflows                   |
+| **Integration Challenges** | Use Step Functions to orchestrate end-to-end workflows                              |
+| **Measuring Success**      | Establish baseline metrics; test with known datasets                                |
 
-```yaml
-# Required KMS permissions for Entity Resolution
-Statement:
-  - Effect: Allow
-    Principal:
-      Service: "entityresolution.amazonaws.com"
-    Action:
-      - "kms:Encrypt"
-      - "kms:Decrypt"
-      - "kms:ReEncrypt*"
-      - "kms:GenerateDataKey*"
-      - "kms:DescribeKey"
-    Resource: "*"
-```
-
-## Implementation Challenges
-
-Based on customer feedback, this section outlines common challenges and recommended
-mitigation strategies:
-
-### Known Limitations and Mitigations
-
-| Challenge                  | Description                                                                    | Mitigation Strategy                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| **Matching Flexibility**   | Exact matching rules may be too rigid for real-world data with variations      | Use composite rules that combine multiple fields; consider data standardization before ingestion           |
-| **Data Preparation**       | Strict formatting requirements create additional work                          | Develop pre-processing scripts for data standardization; use schema mapping templates provided             |
-| **Result Quality**         | False positives requiring manual review; missed matches due to data variations | Implement a phased approach: start with strict rules, then gradually adjust based on results analysis      |
-| **Operational Visibility** | Limited visibility into matching process and decision factors                  | Use CloudWatch logs for workflow monitoring; implement additional operational metrics via CloudWatch       |
-| **Throughput Constraints** | Processing limitations for large datasets                                      | Partition large datasets into smaller batches; implement parallel processing of multiple workflows         |
-| **Integration Challenges** | Difficulty incorporating into existing data flows                              | Use AWS Step Functions to orchestrate end-to-end workflows; implement pre/post-processing Lambda functions |
-| **Measuring Success**      | Hard to quantify value and match quality                                       | Establish baseline metrics before implementation; test with known datasets to evaluate accuracy            |
-
-### Recommended Enhancement Roadmap
-
-For enterprise implementations, consider these enhancements beyond the base template:
+## Enhancement Roadmap
 
 1. **Pre/Post Processing**: Lambda functions for data standardization and results
    processing
-1. **Quality Control**: Implement match confidence scoring and threshold filtering
-1. **Workflow Orchestration**: Use Step Functions to create end-to-end matching
-   pipelines
+1. **Quality Control**: Match confidence scoring and threshold filtering
+1. **Workflow Orchestration**: Step Functions for end-to-end matching pipelines
 1. **Custom Monitoring**: Enhanced CloudWatch dashboards for match quality metrics
 1. **Feedback Loop**: Process to capture false positives/negatives for rule refinement
+
+## Contributing
+
+For contribution guidelines, see [CONTRIBUTING.md](docs/CONTRIBUTING.md).

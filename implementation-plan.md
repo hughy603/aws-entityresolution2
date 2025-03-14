@@ -6,10 +6,60 @@ Service Catalog product.
 ## Implementation Workflow
 
 ```mermaid
-graph LR
+flowchart LR
+    %% Main phases
     A[Plan] --> B[Develop]
     B --> C[Test]
     C --> D[Deploy]
+    D --> E[Operate]
+
+    %% Details for each phase
+    subgraph Planning
+        A1[Requirements Analysis]
+        A2[Security Planning]
+        A3[Data Strategy]
+    end
+
+    subgraph Development
+        B1[CloudFormation Template]
+        B2[Schema Mappings]
+        B3[Matching Rules]
+    end
+
+    subgraph Testing
+        C1[Template Validation]
+        C2[Security Testing]
+        C3[Matching Quality]
+    end
+
+    subgraph Deployment
+        D1[Service Catalog]
+        D2[User Documentation]
+        D3[Knowledge Transfer]
+    end
+
+    subgraph Operations
+        E1[Monitoring]
+        E2[Rule Refinement]
+        E3[Performance Tuning]
+    end
+
+    %% Connect subgraphs
+    A --> Planning
+    B --> Development
+    C --> Testing
+    D --> Deployment
+    E --> Operations
+
+    %% Feedback loop
+    E -.-> |Continuous Improvement| A
+
+    %% Classification
+    classDef phase fill:#FF9900,stroke:#232F3E,color:#232F3E
+    classDef detail fill:#70DBDB,stroke:#232F3E,color:#232F3E
+
+    class A,B,C,D,E phase
+    class A1,A2,A3,B1,B2,B3,C1,C2,C3,D1,D2,D3,E1,E2,E3 detail
 ```
 
 ## Implementation Checklist

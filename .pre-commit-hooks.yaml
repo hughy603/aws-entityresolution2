@@ -1,7 +1,0 @@
-- id: mermaid-validate
-  name: Mermaid Diagram Validator
-  description: Validates Mermaid diagrams in Markdown files
-  entry: ./validate-mermaid.js
-  language: node
-  types: [markdown]
-  pass_filenames: true 

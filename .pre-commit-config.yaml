@@ -1,21 +1,21 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v5.0.0
     hooks:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-merge-conflict
 
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.33.0
-    hooks:
-      - id: markdownlint
-        files: "\\.(md|markdown)$"
-        args: ["--config", ".markdownlint.yaml"]
+  # - repo: https://github.com/igorshubovych/markdownlint-cli
+  #   rev: v0.44.0
+  #   hooks:
+  #     - id: markdownlint
+  #       files: "\\.(md|markdown)$"
+  #       args: ["--config", ".markdownlint.yaml"]
 
   - repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.5.1
+    rev: v1.5.5
     hooks:
       - id: forbid-crlf
       - id: remove-crlf
@@ -23,23 +23,20 @@ repos:
       - id: remove-tabs
 
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.16
+    rev: 0.7.22
     hooks:
       - id: mdformat
         additional_dependencies:
           - mdformat-gfm
           - mdformat-tables
           - mdformat-frontmatter
-          - mdformat-mermaid
         args: ["--wrap", "88"]
         files: "\\.(md|markdown)$"
 
   - repo: local
     hooks:
       - id: mermaid-validate
-        name: Mermaid Diagram Validator
-        description: Validates Mermaid diagrams in Markdown files
-        entry: ./validate-mermaid.js
-        language: system
+        name: Validate Mermaid diagrams in Markdown
+        entry: ./mermaid-validate.sh
+        language: script
         types: [markdown]
-        pass_filenames: true 

@@ -1,72 +1,64 @@
 # AWS Entity Resolution - Implementation Guide
 
-This guide provides a streamlined approach to implementing the AWS Entity Resolution Service Catalog product, including resource configuration details.
+This guide provides a streamlined approach to implementing the AWS Entity Resolution
+Service Catalog product.
 
 ## Implementation Workflow
 
 ```mermaid
-flowchart LR
-    Plan[Plan] --> Design[Design] --> Develop[Develop] --> Test[Test] --> Deploy[Deploy] --> Support[Support]
-    
-    subgraph "Planning Phase"
-        Req[Requirements] --> Arch[Architecture]
-    end
-    
-    subgraph "Development Phase"
-        Template[CloudFormation] --> GlueTables[Glue Tables] --> SchemaMap[Schema Mapping]
-    end
-    
-    subgraph "Testing Phase"
-        Unit[Unit Tests] --> Integration[Integration Tests] --> Security[Security Tests]
-    end
-    
-    style Plan fill:#bbf,stroke:#333,stroke-width:2px
-    style Deploy fill:#bfb,stroke:#333,stroke-width:2px
+graph LR
+    A[Plan] --> B[Develop]
+    B --> C[Test]
+    C --> D[Deploy]
 ```
 
 ## Implementation Checklist
 
-### 1. Planning & Requirements (1-2 Weeks)
+### 1. Planning & Requirements
 
 - [ ] Define entity resolution use case and requirements
-- [ ] Identify data sources and schema requirements
-- [ ] Document security and compliance requirements
-- [ ] Determine matching criteria and rules
+- [ ] Identify data sources and format requirements
 - [ ] Plan S3 bucket structure and KMS key configuration
-- [ ] Establish success metrics
 
-### 2. CloudFormation Development (2-3 Weeks)
+### 2. CloudFormation Development
 
 - [ ] Develop base CloudFormation template
-- [ ] Define and configure KMS keys with appropriate permissions
-- [ ] Define S3 buckets with encryption and lifecycle policies
-- [ ] Define Glue database and table resources
+- [ ] Define and configure KMS key for Entity Resolution access
+- [ ] Define S3 input and output buckets with encryption
 - [ ] Create schema mapping templates
-- [ ] Configure IAM roles with least privilege
-- [ ] Set up CloudWatch monitoring
+- [ ] Configure IAM roles
 
-### 3. Testing & Validation (1-2 Weeks)
+### 3. Testing & Validation
 
 - [ ] Test template deployment
-- [ ] Validate KMS key permissions
-- [ ] Verify S3 bucket creation and encryption
-- [ ] Validate Glue table creation
-- [ ] Test entity resolution workflows
-- [ ] Verify security controls
-- [ ] Perform data validation
+- [ ] Verify KMS key permissions
+- [ ] Test entity resolution workflows with sample data
 
-### 4. Deployment (1 Week)
+### 4. Deployment
 
 - [ ] Publish to Service Catalog
 - [ ] Create documentation for users
-- [ ] Conduct knowledge transfer
 - [ ] Set up support processes
+
+## Sample Data Format
+
+Below is an example of correctly formatted data for Entity Resolution:
+
+```csv
+customer_id,first_name,last_name,email,phone
+C001,John,Smith,john.smith@example.com,555-123-4567
+C002,Jane,Doe,jane.doe@example.com,555-987-6543
+```
+
+Entity Resolution can process this data when properly mapped in your schema
+configuration.
 
 ## Resource Configuration Guide
 
 ### KMS Key Configuration
 
-KMS keys are essential for encrypting your data. The Entity Resolution service needs access to these keys.
+A single KMS key is essential for encrypting your data. Entity Resolution needs access
+to this key.
 
 ```yaml
 DataEncryptionKey:
@@ -92,17 +84,11 @@ DataEncryptionKey:
             - "kms:GenerateDataKey*"
             - "kms:DescribeKey"
           Resource: "*"
-
-DataEncryptionKeyAlias:
-  Type: AWS::KMS::Alias
-  Properties:
-    AliasName: !Sub "alias/${AWS::StackName}-er-key"
-    TargetKeyId: !Ref DataEncryptionKey
 ```
 
 ### S3 Bucket Configuration
 
-S3 buckets store your source data and entity resolution results. Configure them with proper encryption and lifecycle policies.
+S3 buckets store your source data and entity resolution results.
 
 ```yaml
 InputBucket:
@@ -113,15 +99,6 @@ InputBucket:
         - ServerSideEncryptionByDefault:
             SSEAlgorithm: aws:kms
             KMSMasterKeyID: !GetAtt DataEncryptionKey.Arn
-    LifecycleConfiguration:
-      Rules:
-        - Status: Enabled
-          ExpirationInDays: 90
-    PublicAccessBlockConfiguration:
-      BlockPublicAcls: true
-      BlockPublicPolicy: true
-      IgnorePublicAcls: true
-      RestrictPublicBuckets: true
 
 OutputBucket:
   Type: AWS::S3::Bucket
@@ -131,52 +108,35 @@ OutputBucket:
         - ServerSideEncryptionByDefault:
             SSEAlgorithm: aws:kms
             KMSMasterKeyID: !GetAtt DataEncryptionKey.Arn
-    PublicAccessBlockConfiguration:
-      BlockPublicAcls: true
-      BlockPublicPolicy: true
-      IgnorePublicAcls: true
-      RestrictPublicBuckets: true
 ```
 
-### Glue Database and Table Configuration
+### IAM Role Configuration
 
-Glue Tables are the primary data source for AWS Entity Resolution. Configure them to point to your S3 data locations.
+A simple IAM role for Entity Resolution with only the required permissions:
 
 ```yaml
-GlueDatabase:
-  Type: AWS::Glue::Database
+EntityResolutionRole:
+  Type: AWS::IAM::Role
   Properties:
-    CatalogId: !Ref AWS::AccountId
-    DatabaseInput:
-      Name: !Sub "${AWS::StackName}-database"
-      Description: Database for Entity Resolution source data
-
-CustomerTable:
-  Type: AWS::Glue::Table
-  Properties:
-    CatalogId: !Ref AWS::AccountId
-    DatabaseName: !Ref GlueDatabase
-    TableInput:
-      Name: customer_data
-      StorageDescriptor:
-        Location: !Sub "s3://${InputBucket}/customer-data/"
-        InputFormat: org.apache.hadoop.mapred.TextInputFormat
-        OutputFormat: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
-        SerdeInfo:
-          SerializationLibrary: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
-          Parameters:
-            'field.delim': ','
-        Columns:
-          - Name: customer_id
-            Type: string
-          - Name: first_name
-            Type: string
-          - Name: last_name
-            Type: string
-          - Name: email
-            Type: string
-          - Name: phone
-            Type: string
+    AssumeRolePolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: Allow
+          Principal:
+            Service: entityresolution.amazonaws.com
+          Action: sts:AssumeRole
+    ManagedPolicyArns:
+      - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonS3ReadOnlyAccess"
+    Policies:
+      - PolicyName: EntityResolutionS3WriteAccess
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+                - s3:PutObjectAcl
+              Resource: !Sub "arn:aws:s3:::${OutputBucket}/*"
 ```
 
 ### Entity Resolution Configuration
@@ -189,7 +149,7 @@ EntityResolutionWorkflow:
   Properties:
     Description: "Customer matching workflow"
     InputSourceConfig:
-      InputSourceARN: !GetAtt CustomerTable.TableArn
+      InputSourceARN: !Sub "arn:aws:s3:::${InputBucket}/customer-data/"
     OutputSourceConfig:
       OutputS3Path: !Sub "s3://${OutputBucket}/matching-results/"
       KMSArn: !GetAtt DataEncryptionKey.Arn
@@ -210,21 +170,11 @@ EntityResolutionWorkflow:
 
 ## Common Challenges & Solutions
 
-| Challenge | Solution |
-|-----------|----------|
-| **Matching Quality Issues** | Refine schema mapping and matching rules; consider using weighted fields |
-| **Performance with Large Data** | Use efficient schema design; batch processing when possible |
-| **Security Compliance** | Follow IAM least privilege; encrypt all data with KMS; use VPC endpoints when needed |
-| **Glue Table Issues** | Use proper data types; avoid partitioned tables; ensure S3 locations are accessible |
-| **Integration Problems** | Test with representative datasets; document integration points clearly |
-
-## Best Practices
-
-1. **Schema Design**: Create clear, consistent schemas that map well to standard entity types
-2. **Security**: Encrypt all data and implement proper access controls
-3. **Monitoring**: Set up alerts for workflow failures and performance issues
-4. **Testing**: Test with realistic data volumes and variety
-5. **Documentation**: Document all schema mappings and matching rules for future reference
+| Challenge              | Solution                                                        |
+| ---------------------- | --------------------------------------------------------------- |
+| **KMS Access Denied**  | Verify Entity Resolution is allowed in your key policy          |
+| **Data Format Issues** | Ensure data in S3 is in a compatible format (CSV/JSON)          |
+| **Schema Mapping**     | Ensure field names match between source data and schema mapping |
 
 ## Required Permissions
 
@@ -233,15 +183,14 @@ Users deploying this Service Catalog product need:
 ```
 servicecatalog:ProvisionProduct
 cloudformation:CreateStack
-glue:CreateDatabase
-glue:CreateTable
 s3:CreateBucket
+kms:CreateKey
 iam:PassRole
 ```
 
 ## Next Steps After Deployment
 
 1. Verify CloudFormation stack created successfully
-2. Confirm Glue tables are accessible to Entity Resolution
-3. Test data upload and processing workflow
-4. Monitor initial matching results and refine as needed 
+1. Confirm S3 buckets are properly configured with encryption
+1. Test data upload and processing workflow
+1. Monitor initial matching results and refine as needed

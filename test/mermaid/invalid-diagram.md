@@ -8,5 +8,5 @@ flowchart LR
     B ->|Yes| C[Success]  <!-- Missing an arrow character -->
     B -->|No| D[Failure]
     C -> E[End]  <!-- Missing an arrow character -->
-    D --> 
+    D -->
 ```

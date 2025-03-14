@@ -2,7 +2,7 @@
 
 ## Overview
 
-This Service Catalog product provides a standardized way to implement AWS Entity
+This Service Catalog product provides a streamlined way to implement AWS Entity
 Resolution workflows for matching records across datasets without sharing identifier
 data. It enables organizations to deploy entity resolution capabilities with consistent
 security controls, governance, and deployment patterns.
@@ -19,33 +19,23 @@ security controls, governance, and deployment patterns.
 
 ```mermaid
 graph LR
-    SC[Service Catalog] --> |1. Launch| CFN[CloudFormation]
-    CFN --> |2. Create| ER[Entity Resolution]
-    User[User] --> |Defines in CFN| Glue[Glue Tables]
-    User --> |Defines in CFN| S3[S3 Buckets]
-    User --> |Defines in CFN| KMS[KMS Keys]
-    S3 --> |3. Store| Data[User Data]
-    Glue --> |4. Reference| S3
-    ER --> |5. Process| Glue
-    ER --> |6. Output| Results[Results Bucket]
-
-    style SC fill:#bbf,stroke:#333,stroke-width:2px
-    style ER fill:#bfb,stroke:#333,stroke-width:2px
-    style Glue fill:#99f,stroke:#333,stroke-width:2px
-    style S3 fill:#fc9,stroke:#333,stroke-width:2px
-    style KMS fill:#f9c,stroke:#333,stroke-width:2px
+    A[Service Catalog] --> B[CloudFormation]
+    B --> C[Entity Resolution]
+    D[S3 Input] --> C
+    C --> E[S3 Output]
+    F[KMS Key] -.-> D
+    F -.-> E
+    F -.-> C
 ```
 
 ## Implementation Requirements
 
 ### Critical Requirements
 
-1. **User-Defined Resources**: You must define Glue Tables, S3 buckets, and KMS keys in
-   the same CloudFormation template
-1. **Glue Tables**: AWS Entity Resolution reads data exclusively from Glue Tables (not
-   directly from S3)
-1. **Limitations**: Partitioned tables and S3 locations registered with AWS Lake
-   Formation are not supported
+1. **S3 Buckets**: Separate input and output S3 buckets for data storage
+1. **Data Format**: Input data must be in a format compatible with Entity Resolution
+   (CSV/JSON)
+1. **Security**: A single KMS key for encrypting all data at rest
 
 ### CloudFormation Template Components
 
@@ -55,11 +45,10 @@ graph LR
   - Schema mappings for standardized data formats
   - ID mapping tables for entity relationships
 
-- **User-Defined Resources**
+- **Infrastructure Resources**
 
-  - Glue Database and Tables
   - S3 buckets for data storage and results
-  - KMS keys for encryption
+  - KMS key for encryption
 
 - **Supporting Resources**
 
@@ -88,58 +77,64 @@ InputBucket:
             SSEAlgorithm: aws:kms
             KMSMasterKeyID: !GetAtt DataEncryptionKey.Arn
 
-# Glue Database
-GlueDatabase:
-  Type: AWS::Glue::Database
+# S3 Bucket for Output Data
+OutputBucket:
+  Type: AWS::S3::Bucket
   Properties:
-    CatalogId: !Ref AWS::AccountId
-    DatabaseInput:
-      Name: !Sub "${AWS::StackName}-database"
+    BucketEncryption:
+      ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: aws:kms
+            KMSMasterKeyID: !GetAtt DataEncryptionKey.Arn
 
-# Glue Table
-CustomerTable:
-  Type: AWS::Glue::Table
+# Entity Resolution Workflow
+EntityResolutionWorkflow:
+  Type: AWS::EntityResolution::MatchingWorkflow
   Properties:
-    CatalogId: !Ref AWS::AccountId
-    DatabaseName: !Ref GlueDatabase
-    TableInput:
-      Name: customer_data
-      StorageDescriptor:
-        Location: !Sub "s3://${InputBucket}/customer-data/"
-        # Additional table configuration...
+    Description: "Customer matching workflow"
+    InputSourceConfig:
+      InputSourceARN: !Sub "arn:aws:s3:::${InputBucket}/customer-data/"
+    OutputSourceConfig:
+      OutputS3Path: !Sub "s3://${OutputBucket}/matching-results/"
+      KMSArn: !GetAtt DataEncryptionKey.Arn
 ```
 
 ## Security Considerations
 
-- **Data Encryption**: All data must be encrypted at rest using KMS keys
-- **IAM Permissions**: Entity Resolution service requires access to your Glue Tables, S3
-  buckets, and KMS keys
-- **Access Controls**: Implement proper bucket policies and IAM roles
-- **Monitoring**: Set up CloudWatch alerts for security events and operational
-  monitoring
+The only security requirement for AWS Entity Resolution is KMS integration:
+
+- **KMS Access**: Entity Resolution service requires access to your KMS key to decrypt
+  your data and encrypt results
+- **Key Policy**: Ensure your KMS key policy includes permissions for the
+  entityresolution.amazonaws.com service principal
+- **Testing**: Verify KMS access works by testing a small workflow before full
+  implementation
+
+For an example key policy configuration, see the
+[Security Guide](security-considerations.md).
 
 ## Deployment Process
 
 1. Request the Service Catalog product from your administrator
 1. Customize the CloudFormation parameters for your use case
-1. Define your Glue Tables, S3 buckets, and KMS keys in the template
+1. Define your S3 buckets and KMS key in the template
 1. Launch the product through Service Catalog
-1. Upload your data to your S3 bucket
+1. Upload your data to your S3 input bucket
 1. Configure and run your matching workflows
 1. Access matching results in your output bucket
 
 ## Documentation Structure
 
-This consolidated README provides an overview of the AWS Entity Resolution Service
-Catalog product. For detailed information on specific aspects, refer to:
+This README provides an overview of the AWS Entity Resolution Service Catalog product.
+For details:
 
-| Document                                                        | Purpose                                             |
-| --------------------------------------------------------------- | --------------------------------------------------- |
-| [Implementation Guide](implementation-plan.md)                  | Step-by-step implementation process                 |
-| [Resource Configuration Guide](resource-configuration-guide.md) | Detailed configuration for Glue Tables, S3, and KMS |
-| [Security Considerations](security-considerations.md)           | In-depth security controls and compliance           |
-| [Contributing Guide](docs/CONTRIBUTING.md)                      | How to contribute to documentation                  |
-| [Validation Guide](docs/VALIDATION.md)                          | Documentation and Mermaid diagram validation        |
+| Document                                       | Purpose                                                        |
+| ---------------------------------------------- | -------------------------------------------------------------- |
+| [Implementation Guide](implementation-plan.md) | Step-by-step implementation process and resource configuration |
+| [Architecture Document](architecture.md)       | Simplified technical architecture                              |
+| [Security Guide](security-considerations.md)   | KMS integration requirements                                   |
+
+We've simplified documentation to focus on essential requirements.
 
 ### Documentation Quality Tools
 
@@ -179,7 +174,6 @@ necessary corrections.
 Common issues and solutions:
 
 - **Access Denied Errors**: Check IAM roles and KMS key policies
-- **Glue Table Not Found**: Ensure Glue Tables are correctly defined in the
-  CloudFormation template
+- **Data Format Issues**: Ensure your S3 data is in a compatible format (CSV/JSON)
 - **Entity Resolution Workflow Failures**: Verify schema mappings match your data format
 - **Performance Issues**: Check for data volume constraints or throttling

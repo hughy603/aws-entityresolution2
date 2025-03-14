@@ -40,7 +40,7 @@ MD040: true
 # Rules for code blocks in lists
 MD031:
   list_items: true
-  
+
 # Blank lines around code blocks
 MD012:
   maximum: 1
@@ -48,4 +48,4 @@ MD012:
 # Special rules for Mermaid diagrams
 # Enable Mermaid blocks to be properly recognized and not trigger false positives
 MD046:
-  style: "consistent" 
+  style: "consistent"

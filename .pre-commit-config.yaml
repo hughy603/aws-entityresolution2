@@ -40,7 +40,6 @@ repos:
         name: Mermaid Diagram Validator
         description: Validates Mermaid diagrams in Markdown files
         entry: ./validate-mermaid.js
-        language: node
+        language: system
         types: [markdown]
-        pass_filenames: true
-        additional_dependencies: ['@mermaid-js/mermaid-cli'] 
+        pass_filenames: true 

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Mermaid diagram linting setup using industry-standard tools",
   "scripts": {
-    "lint": "./lint-mermaid.sh",
+    "lint": "./mermaid-validate.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

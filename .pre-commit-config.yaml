@@ -6,13 +6,10 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-merge-conflict
-
-  # - repo: https://github.com/igorshubovych/markdownlint-cli
-  #   rev: v0.44.0
-  #   hooks:
-  #     - id: markdownlint
-  #       files: "\\.(md|markdown)$"
-  #       args: ["--config", ".markdownlint.yaml"]
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: ['--fix=lf']
 
   - repo: https://github.com/Lucas-C/pre-commit-hooks
     rev: v1.5.5
@@ -37,6 +34,18 @@ repos:
     hooks:
       - id: mermaid-validate
         name: Validate Mermaid diagrams in Markdown
+        description: Validates Mermaid diagram syntax in Markdown files
         entry: ./mermaid-validate.sh
         language: script
         types: [markdown]
+        pass_filenames: true
+        files: "\\.(md|markdown)$"
+
+      - id: check-document-links
+        name: Check internal document links in Markdown
+        description: Checks if internal document links are valid
+        entry: ./scripts/check-document-links.sh
+        language: script
+        files: "\\.(md|markdown)$"
+        pass_filenames: false
+        always_run: true

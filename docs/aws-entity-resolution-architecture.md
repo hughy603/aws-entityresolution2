@@ -2,65 +2,91 @@
 
 ## Overview
 
-This document outlines the proposed technical architecture for implementing AWS Entity
-Resolution within our organization. The architecture is designed to be scalable, secure,
-and integrated with our existing data ecosystem while providing the flexibility to
-support multiple business use cases.
+This document outlines the technical architecture for implementing AWS Entity Resolution
+within our organization. AWS Entity Resolution is a fully managed service that helps us
+match and link related records stored across multiple applications, channels, and data
+stores. The architecture focuses on the core functionality of AWS Entity Resolution to
+provide a streamlined implementation approach.
+
+AWS Entity Resolution offers built-in matching techniques including rule-based matching,
+machine learning-based matching, and data service provider-led matching to link related
+sets of customer information, product codes, or business data. It enables us to create a
+unified view across our data sources using AWS-managed components without requiring
+custom development.
 
 ## Architecture Diagram
 
 ```mermaid
-graph TD
-    %% Data Sources
-    DS1[Source System 1] --> GD1[AWS Glue Data Catalog]
-    DS2[Source System 2] --> GD1
-    DS3[Source System 3] --> GD1
-    DS4[External Data Sources] --> S3I[S3 Input Bucket]
+flowchart TD
+    %% Data Sources Layer
+    subgraph DataSources["Data Sources"]
+        DS["Internal Data Sources"]
+        DS_Ext["External Data Sources"]
+    end
 
-    %% Entity Resolution Components
-    GD1 --> ER[AWS Entity Resolution]
+    %% Glue Layer (Prerequisites)
+    subgraph GlueLayer["AWS Glue (Prerequisites)"]
+        GD["Glue Database"]
+        GT["Glue Tables"]
+        GDC["Glue Data Catalog"]
+
+        GD --> GT --> GDC
+    end
+
+    %% Entity Resolution Layer
+    subgraph ERLayer["AWS Entity Resolution"]
+        ER["Entity Resolution Service"]
+        SM["Schema Mapping"] -.-> ER
+        MW["Matching Workflow"] -.-> ER
+    end
+
+    %% Storage Layer
+    subgraph Storage["Storage"]
+        S3I["S3 Input Bucket"]
+        S3O["S3 Output Bucket"]
+    end
+
+    %% Security Layer
+    subgraph Security["Security"]
+        IAM["IAM Role"]
+        KMS["KMS Key"]
+    end
+
+    %% Consumers Layer
+    subgraph Consumers["Consumers"]
+        DW["Data Warehouse"]
+        AN["Analytics"]
+        ML["ML Models"]
+    end
+
+    %% Connections between layers
+    DataSources --> GlueLayer
+    DS --> GD
+    DS_Ext --> S3I
+
+    GDC --> ER
     S3I --> ER
-    ER --> S3O[S3 Output Bucket]
+    ER --> S3O
 
-    %% Workflow Components
-    SM[Schema Mapping] --> ER
-    MW[Matching Workflow] --> ER
+    S3O --> Consumers
 
-    %% Additional Components
-    ER --> API[API Gateway]
-    API --> APPC[Applications]
-    ER --> LAMBDA[Lambda Processors]
-    ER --> SF[Step Functions]
-    SF --> BATCH[Batch Processing]
-
-    %% Output Consumers
-    S3O --> DW[Data Warehouse]
-    S3O --> ANLYT[Analytics]
-    S3O --> ML[ML Models]
-
-    %% Security Components
-    KMS[KMS Key] -.-> ER
-    KMS -.-> S3I
-    KMS -.-> S3O
-    IAM[IAM Role] -.-> ER
-
-    %% Monitoring
-    CW[CloudWatch] -.-> ER
-    CW -.-> LAMBDA
-    CW -.-> SF
+    IAM -.-> ER
+    KMS -.-> S3I & S3O & ER
 
     %% Classification
     classDef aws fill:#FF9900,stroke:#232F3E,color:#232F3E
+    classDef prereq fill:#1E8900,stroke:#232F3E,color:white
     classDef sourceSystem fill:#3F8624,stroke:#232F3E,color:white
     classDef security fill:#DD344C,stroke:#232F3E,color:white
-    classDef monitoring fill:#7AA116,stroke:#232F3E,color:white
     classDef consumer fill:#3B48CC,stroke:#232F3E,color:white
+    classDef layer fill:none,stroke:#666,stroke-dasharray: 5 5
 
-    class GD1,ER,S3I,S3O,SM,MW,API,LAMBDA,SF,BATCH aws
-    class DS1,DS2,DS3,DS4 sourceSystem
-    class KMS,IAM security
-    class CW monitoring
-    class DW,ANLYT,ML,APPC consumer
+    class ER,SM,MW,ERLayer aws
+    class GD,GT,GDC,GlueLayer prereq
+    class DS,DS_Ext,DataSources sourceSystem
+    class IAM,KMS,Security security
+    class DW,AN,ML,Consumers consumer
+    class Storage layer
 ```
 
 ## Component Details
@@ -77,8 +103,9 @@ graph TD
 
 1. **AWS Glue Data Catalog**[¹](#references)
 
-   - Centralized metadata repository
+   - Centralized metadata repository containing Glue Databases and Tables
    - Maintains table definitions and schema information
+   - AWS Entity Resolution requires Glue Tables for processing
    - Acts as the primary data source for AWS Entity Resolution
 
 1. **S3 Input Bucket**
@@ -91,23 +118,24 @@ graph TD
 
 1. **Schema Mapping**[²](#references)
 
-   - Define data schemas for each source system
+   - Define data schemas for each source system (up to 20 data inputs supported)
    - Map source fields to standard entity attributes
-   - Configure data normalization rules
-   - Support for custom transformation logic
+   - Create schemas from AWS Glue data catalog (databases and tables)
+   - Note: Data normalization is handled outside the scope of Entity Resolution
 
 1. **Matching Workflows**[²](#references)
 
-   - Rule-based matching configurations
-   - ML-based matching for complex scenarios
-   - Provider-led matching for external data enrichment
-   - Configuration for match threshold settings
+   - Rule-based matching with configurable rules and priorities
+   - ML-based matching for complex scenarios with confidence scoring (0.0-1.0)
+   - Provider-led matching for data enrichment and third-party integrations
+   - Automatic or manual processing cadence options
+   - Support for match threshold customization
 
 1. **Processing Models**[²](#references)
 
-   - Batch processing for large datasets
-   - Incremental processing for new records
-   - Real-time lookups via API
+   - Batch processing for large datasets (manual bulk processing)
+   - Automatic incremental processing for new records (rule-based matching only)
+   - Near real-time lookups via GetMatchId API
 
 1. **S3 Output Bucket**
 
@@ -115,105 +143,44 @@ graph TD
    - Maintains resolution history
    - Supports encrypted storage of matched data
 
-### Integration Components
-
-1. **API Gateway**[³](#references)
-
-   - Provides RESTful interface for real-time resolution
-   - Supports authenticated access from applications
-   - Enables GetMatchId functionality
-
-1. **Lambda Functions**[⁴](#references)
-
-   - Pre-processing data transformation
-   - Post-processing result enrichment
-   - Custom matching rule execution
-   - Integration with downstream systems
-
-1. **Step Functions**[⁵](#references)
-
-   - Orchestrates end-to-end matching workflows
-   - Coordinates batch processing jobs
-   - Handles error conditions and retries
-   - Triggers notifications on completion
-
 ### Security Components
 
-1. **KMS Key Management**[⁶](#references)
+1. **IAM Roles and Policies**[³](#references)
 
-   - Centralized encryption key management
-   - Encryption of data at rest and in transit
-   - Key rotation and access controls
-
-1. **IAM Roles and Policies**[⁷](#references)
-
-   - Least-privilege access model
    - Service role for Entity Resolution
    - Data access policies for input/output buckets
-   - API authentication and authorization
 
 1. **Data Protection Features**[²](#references)
 
-   - Support for hashed PII data
-   - Regional data processing
-   - Audit logging of all resolution activities
+   - Regional data processing (data remains in the AWS Region where processed)
+   - Option to hide fields in output
+   - Support for encrypted S3 buckets
 
 ### Monitoring and Observability
 
-1. **CloudWatch Integration**[⁸](#references)
+1. **Job Metrics**[²](#references)
 
-   - Operational metrics collection
-   - Performance monitoring
-   - Alerting on error conditions
-   - Log aggregation and analysis
-
-1. **Custom Dashboards**
-
-   - Match quality metrics
-   - Processing volume trends
-   - Error rate monitoring
-   - Data quality indicators
+   - Processing status and completion rates
+   - Record counts processed
+   - Match counts identified
+   - Basic job statistics
 
 ## Data Flow
 
 ### Batch Resolution Process
 
 1. Source systems export data to AWS Glue tables or S3 buckets
-1. AWS Entity Resolution reads data using configured schema mappings
+1. AWS Entity Resolution reads data from Glue Data Catalog
 1. Matching workflows execute based on defined rules or ML models
 1. Match results are written to S3 output bucket with unique match IDs
 1. Downstream systems consume match results for business processes
 
 ### Real-time Resolution Process
 
-1. Application sends entity attributes via API call
-1. AWS Entity Resolution applies normalization and matching rules
+1. Application calls GetMatchId API with entity attributes
+1. AWS Entity Resolution service processes the request
 1. Service returns match ID if entity matches existing records
-1. Application uses match ID to retrieve or update entity information
-1. CloudWatch logs and metrics capture resolution activity
-
-## Implementation Considerations
-
-### Data Preparation
-
-- Consistent primary keys across source systems
-- Data quality assessment and remediation
-- Normalization of key attributes (names, addresses, etc.)
-- Handling of missing or incomplete data
-
-### Performance Optimization
-
-- Partitioning large datasets for parallel processing
-- Incremental processing for high-volume sources
-- Strategic use of real-time vs. batch resolution
-- Caching strategies for frequently resolved entities
-
-### Integration Strategy
-
-- Initial bulk matching for historical data
-- Incremental updates for ongoing changes
-- Event-driven resolution for real-time use cases
-- Feedback loops for match quality improvement
+1. Application uses match ID to retrieve unified information
 
 ## Use Case Implementations
 
@@ -252,17 +219,21 @@ Components:
 
 ## Scalability and High Availability
 
-- AWS Entity Resolution is a managed service with built-in scalability[⁹](#references)
+- AWS Entity Resolution is a fully managed service with built-in scalability
+- Available in multiple AWS Regions: US East (Ohio, N. Virginia), US West (Oregon), Asia
+  Pacific (Seoul, Singapore, Sydney, Tokyo), and Europe (Frankfurt, Ireland, London)
 - Multi-AZ deployment for high availability
 - Automatic scaling based on workload
 - No infrastructure management required
 
 ## Cost Optimization
 
-- Pay-per-use pricing model[¹⁰](#references)
-- Optimize batch processing schedules
-- Use incremental processing where possible
-- Monitor and adjust real-time API usage
+- Pay-per-use pricing model based on the number of source records
+  processed[⁴](#references)
+- Pricing does not depend on matching method (same cost for rule-based or ML matching)
+- Optimize batch processing schedules to reduce processing costs
+- Use incremental processing where possible to minimize processing volume
+- Monitor and adjust real-time API usage for cost-effective operations
 
 ## Implementation Roadmap
 
@@ -271,6 +242,7 @@ Components:
 - Establish AWS Entity Resolution infrastructure
 - Configure security controls and access policies
 - Implement initial schema mappings for primary data sources
+- Ensure Glue Data Catalog and Tables are properly configured for Entity Resolution
 - Develop and test basic matching workflows
 
 ### Phase 2: Core Use Cases (3-6 months)
@@ -300,12 +272,7 @@ and enhancement of our entity resolution capabilities.
 ## References
 
 1. [AWS Glue Data Catalog Documentation](https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html)
-1. [AWS Entity Resolution Features](https://docs.aws.amazon.com/entityresolution/latest/userguide/what-is-service.html)
-1. [Amazon API Gateway Documentation](https://docs.aws.amazon.com/apigateway/latest/developerguide/welcome.html)
-1. [AWS Lambda Documentation](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
-1. [AWS Step Functions Documentation](https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html)
-1. [AWS KMS Documentation](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html)
+1. [AWS Entity Resolution Documentation](https://docs.aws.amazon.com/entityresolution/latest/userguide/what-is-service.html)
 1. [AWS IAM Documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction.html)
-1. [Amazon CloudWatch Documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html)
-1. [AWS Entity Resolution Serverless Blog](https://aws.amazon.com/blogs/industries/how-to-build-serverless-entity-resolution-workflows-on-aws/)
 1. [AWS Entity Resolution Pricing](https://aws.amazon.com/entity-resolution/pricing/)
+1. [AWS Entity Resolution Matching Workflows](https://docs.aws.amazon.com/entityresolution/latest/userguide/create-matching-workflow.html)

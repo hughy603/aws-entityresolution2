@@ -15,33 +15,64 @@ Entity Resolution Service Catalog product.
 ## Architecture Diagram
 
 ```mermaid
-graph TD
-    %% Core Flow
-    SC[Service Catalog] --> CF[CloudFormation Stack]
-    CF --> ER[Entity Resolution Service]
-    S3I[S3 Input Bucket] --> ER
-    ER --> S3O[S3 Output Bucket]
+flowchart TD
+    %% Service Deployment Layer
+    subgraph Deployment["Service Deployment"]
+        SC["Service Catalog"]
+        CF["CloudFormation Stack"]
+        SC --> CF
+    end
 
-    %% Security Components
-    KMS[KMS Key] -.-> S3I
-    KMS -.-> S3O
-    KMS -.-> ER
-    IAM[IAM Role] -.-> ER
+    %% Prerequisites Layer
+    subgraph Prerequisites["Prerequisites"]
+        GD["Glue Database"] --> GT["Glue Tables"] --> GDC["Glue Data Catalog"]
+    end
 
-    %% Monitoring
-    ER -.-> CW[CloudWatch Logs]
+    %% Entity Resolution Layer
+    subgraph ERService["Entity Resolution"]
+        ER["Entity Resolution Service"]
+    end
 
-    %% Access Controls
-    IAM -.-> S3I
-    IAM -.-> S3O
+    %% Storage Layer
+    subgraph Storage["Storage"]
+        S3I["S3 Input Bucket"]
+        S3O["S3 Output Bucket"]
+    end
+
+    %% Security Layer
+    subgraph Security["Security"]
+        KMS["KMS Key"]
+        IAM["IAM Role"]
+    end
+
+    %% Monitoring Layer
+    subgraph Monitoring["Monitoring"]
+        CW["CloudWatch"]
+    end
+
+    %% Flow connections
+    CF --> ER
+    S3I --> ER
+    GDC --> ER
+    ER --> S3O
+
+    %% Non-flow connections
+    KMS -.-> S3I & S3O & ER
+    IAM -.-> ER & S3I & S3O & GDC
+    ER -.- CW
 
     %% Classification
     classDef aws fill:#FF9900,stroke:#232F3E,color:#232F3E
+    classDef prereq fill:#1E8900,stroke:#232F3E,color:white
     classDef security fill:#DD344C,stroke:#232F3E,color:white
     classDef monitoring fill:#7AA116,stroke:#232F3E,color:white
-    class SC,CF,ER,S3I,S3O aws
-    class KMS,IAM security
-    class CW monitoring
+    classDef layer fill:none,stroke:#666,stroke-dasharray: 5 5
+
+    class SC,CF,ER,ERService,Deployment aws
+    class GD,GT,GDC,Prerequisites prereq
+    class KMS,IAM,Security security
+    class CW,Monitoring monitoring
+    class Storage layer
 ```
 
 ## Component Specifications
@@ -84,37 +115,72 @@ graph TD
 
 ```mermaid
 flowchart TD
-    %% Core Components
-    CF[CloudFormation] --> ER[Entity Resolution]
-    S3I[S3 Input] --> L1[Lambda Pre-processor]
-    L1 --> ER
-    ER --> L2[Lambda Post-processor]
-    L2 --> S3O[S3 Output]
+    %% Prerequisites Layer
+    subgraph Prerequisites["Prerequisites"]
+        GD["Glue Database"] --> GT["Glue Tables"] --> GDC["Glue Data Catalog"]
+    end
 
-    %% Orchestration
-    SF[Step Functions] ---> L1
-    SF ---> ER
-    SF ---> L2
+    %% Deployment Layer
+    subgraph Deployment["Deployment"]
+        CF["CloudFormation"]
+    end
 
-    %% Monitoring & Analytics
-    ER --> CW[CloudWatch]
-    L1 --> CW
-    L2 --> CW
-    CW --> DB[DynamoDB Metrics]
+    %% Processing Layer
+    subgraph Processing["Data Processing"]
+        L1["Lambda<br>Pre-processor"]
+        ER["Entity Resolution"]
+        L2["Lambda<br>Post-processor"]
+    end
 
-    %% Security
-    KMS[KMS] -.-> S3I
-    KMS -.-> S3O
-    KMS -.-> ER
+    %% Storage Layer
+    subgraph Storage["Storage"]
+        S3I["S3 Input Bucket"]
+        S3O["S3 Output Bucket"]
+    end
+
+    %% Orchestration Layer
+    subgraph Orchestration["Orchestration"]
+        SF["Step Functions"]
+    end
+
+    %% Monitoring Layer
+    subgraph Monitoring["Monitoring"]
+        CW["CloudWatch"]
+        DB["DynamoDB<br>Metrics"]
+    end
+
+    %% Security Layer
+    subgraph Security["Security"]
+        KMS["KMS Key"]
+    end
+
+    %% Main flow
+    S3I --> L1 --> ER --> L2 --> S3O
+    GDC --> ER
+    CF --> ER
+
+    %% Orchestration flow
+    SF -.-> L1 & ER & L2
+
+    %% Monitoring connections
+    L1 & ER & L2 -.- CW
+    CW --> DB
+
+    %% Security connections
+    KMS -.-> S3I & S3O & ER & L1 & L2
 
     %% Classification
     classDef aws fill:#FF9900,stroke:#232F3E,color:#232F3E
+    classDef prereq fill:#1E8900,stroke:#232F3E,color:white
     classDef security fill:#DD344C,stroke:#232F3E,color:white
     classDef monitoring fill:#7AA116,stroke:#232F3E,color:white
+    classDef layer fill:none,stroke:#666,stroke-dasharray: 5 5
 
-    class CF,ER,S3I,S3O,L1,L2,SF,DB aws
-    class KMS security
-    class CW monitoring
+    class CF,Deployment,ER,L1,L2,Processing aws
+    class GD,GT,GDC,Prerequisites prereq
+    class KMS,Security security
+    class CW,DB,Monitoring monitoring
+    class SF,Orchestration,Storage layer
 ```
 
 ## Implementation Challenges and Solutions

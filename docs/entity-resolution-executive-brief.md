@@ -27,7 +27,7 @@ significant business value.
 - **ROI**: 250% - 350%
 - **Payback Period**: 12 - 18 months
 
-![ROI Breakdown](https://via.placeholder.com/600x300?text=ROI+Breakdown+Chart)
+[View detailed ROI breakdown](entity-resolution-roi-analysis.md)
 
 ## Solution Recommendation
 

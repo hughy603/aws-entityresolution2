@@ -7,50 +7,151 @@ Service Catalog product.
 
 ```mermaid
 flowchart LR
-    %% Main phases
-    A[Plan] --> B[Develop]
-    B --> C[Test]
-    C --> D[Deploy]
-    D --> E[Operate]
-
-    %% Details for each phase
-    subgraph Planning
-        A1[Requirements Analysis]
-        A2[Security Planning]
-        A3[Data Strategy]
+    %% Main workflow phases
+    subgraph MainFlow["Implementation Process"]
+        direction LR
+        P["1. Prerequisites<br>Setup"] -->
+        A["2. Plan<br>Requirements"] -->
+        B["3. Develop<br>Configuration"] -->
+        C["4. Test<br>Validation"] -->
+        D["5. Deploy<br>Service Catalog"] -->
+        E["6. Operate<br>Monitor & Refine"]
     end
 
-    subgraph Development
-        B1[CloudFormation Template]
-        B2[Schema Mappings]
-        B3[Matching Rules]
+    %% Phase details with key activities
+    subgraph PrereqActivities["Prerequisite Activities"]
+        direction TB
+        P1["Glue Database<br>Creation"]
+        P2["Glue Tables<br>Setup"]
+        P3["IAM Permissions<br>Configuration"]
+
+        P1 --- P2 --- P3
     end
 
-    subgraph Testing
-        C1[Template Validation]
-        C2[Security Testing]
-        C3[Matching Quality]
+    subgraph PlanActivities["Planning Activities"]
+        direction TB
+        A1["Requirements<br>Analysis"]
+        A2["Security<br>Planning"]
+        A3["Data Strategy<br>Design"]
+
+        A1 --- A2 --- A3
     end
 
-    subgraph Deployment
-        D1[Service Catalog]
-        D2[User Documentation]
-        D3[Knowledge Transfer]
+    subgraph DevActivities["Development Activities"]
+        direction TB
+        B1["CloudFormation<br>Templates"]
+        B2["Schema<br>Mapping"]
+        B3["Matching<br>Rules"]
+
+        B1 --- B2 --- B3
     end
 
-    subgraph Operations
-        E1[Monitoring]
-        E2[Rule Refinement]
-        E3[Performance Tuning]
+    subgraph TestActivities["Testing Activities"]
+        direction TB
+        C1["Template<br>Validation"]
+        C2["Security<br>Testing"]
+        C3["Matching<br>Quality"]
+
+        C1 --- C2 --- C3
     end
 
-    %% Connect subgraphs
-    A --> Planning
-    B --> Development
-    C --> Testing
-    D --> Deployment
-    E --> Operations
+    subgraph DeployActivities["Deployment Activities"]
+        direction TB
+        D1["Service Catalog<br>Deployment"]
+        D2["Documentation<br>Handover"]
+        D3["Knowledge<br>Transfer"]
+
+        D1 --- D2 --- D3
+    end
+
+    subgraph OpActivities["Operations Activities"]
+        direction TB
+        E1["Monitoring<br>Dashboard"]
+        E2["Rule<br>Refinement"]
+        E3["Performance<br>Tuning"]
+
+        E1 --- E2 --- E3
+    end
+
+    %% Connect phases to activities
+    P --- PrereqActivities
+    A --- PlanActivities
+    B --- DevActivities
+    C --- TestActivities
+    D --- DeployActivities
+    E --- OpActivities
+
+    %% Style
+    classDef phaseNode fill:#34495E,stroke:#232F3E,color:white,rounded:true
+    classDef prereq fill:#1E8900,stroke:#232F3E,color:white
+    classDef activity fill:#3498DB,stroke:#232F3E,color:white
+    classDef mainflow fill:none,stroke:#666,stroke-width:2px
+
+    class P,P1,P2,P3,PrereqActivities prereq
+    class A,B,C,D,E phaseNode
+    class A1,A2,A3,B1,B2,B3,C1,C2,C3,D1,D2,D3,E1,E2,E3 activity
+    class MainFlow,PlanActivities,DevActivities,TestActivities,DeployActivities,OpActivities mainflow
 ```
+
+## Prerequisites
+
+Before implementing AWS Entity Resolution, ensure the following prerequisites are in
+place:
+
+### Glue Database and Tables
+
+1. **Create AWS Glue Database**
+
+   - Navigate to AWS Glue console
+   - Create a new database to store table definitions
+   - Use consistent naming conventions for easier management
+
+1. **Configure Glue Tables**
+
+   - Define tables that map to your source data
+   - Ensure proper column definitions and data types
+   - Verify table accessibility from Entity Resolution service
+
+1. **Data Catalog Permissions**
+
+   - Configure IAM permissions for Glue catalog access
+   - Ensure Entity Resolution service can access the catalog
+
+### IAM Permissions
+
+1. **Service Role**
+
+   - Create IAM role with permissions for:
+     - AWS Entity Resolution service
+     - AWS Glue Data Catalog access
+     - S3 bucket read/write
+     - KMS key usage
+
+1. **User Permissions**
+
+   - Grant appropriate permissions to users who will:
+     - Deploy CloudFormation templates
+     - Manage matching workflows
+     - Access match results
+
+### S3 Buckets
+
+1. **Input Bucket**
+
+   - Create S3 bucket for input data
+   - Configure appropriate encryption settings
+
+1. **Output Bucket**
+
+   - Create S3 bucket for match results
+   - Configure encryption and access policies
+
+### KMS Keys
+
+1. **Create KMS Key**
+   - Create customer managed key for data encryption
+   - Configure key policy with appropriate permissions
+   - Enable automatic key rotation
 
 ## Deployment Checklist
 

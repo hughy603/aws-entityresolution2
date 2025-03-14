@@ -7,52 +7,60 @@ Service Catalog product.
 
 ```mermaid
 flowchart TD
-    %% Data Security Layers
-    subgraph AccessControl [Access Control]
-        IAM[IAM]
-        ROLES[IAM Roles]
-        SC[Service Catalog]
+    %% Core Components in center
+    subgraph CoreServices["AWS Entity Resolution Services"]
+        EntityRes["Entity Resolution Service"]
+        GDC["Glue Data Catalog"]
+        S3In["S3 Input Bucket"]
+        S3Out["S3 Output Bucket"]
     end
 
-    subgraph DataProtection [Data Protection]
-        KMS[KMS]
-        S3E[S3 Encryption]
-        TLS[TLS 1.2+]
+    %% Security Layers surrounding core components
+    subgraph AccessControlLayer["Access Control Layer"]
+        direction LR
+        IAM["IAM Policies"]
+        ROLES["IAM Roles"]
+        SC["Service Catalog<br>Controls"]
+        GluePerms["Glue<br>Permissions"]
     end
 
-    subgraph NetworkSecurity [Network Security]
-        VPE[VPC Endpoints]
-        NACL[Network ACLs]
-        SG[Security Groups]
+    subgraph DataProtectionLayer["Data Protection Layer"]
+        direction LR
+        KMS["KMS<br>Encryption"]
+        S3E["Bucket<br>Encryption"]
+        TLS["TLS 1.2+<br>In-Transit"]
     end
 
-    subgraph Monitoring [Monitoring & Audit]
-        CT[CloudTrail]
-        CW[CloudWatch]
-        S3L[S3 Access Logs]
+    subgraph NetworkLayer["Network Security Layer"]
+        direction LR
+        VPE["VPC<br>Endpoints"]
+        SG["Security<br>Groups"]
     end
 
-    %% Entity Resolution Components
-    EntityRes[Entity Resolution Service]
-    S3In[S3 Input Bucket]
-    S3Out[S3 Output Bucket]
+    subgraph MonitoringLayer["Monitoring & Audit Layer"]
+        direction LR
+        CT["CloudTrail<br>Logs"]
+        CW["CloudWatch<br>Metrics"]
+        S3L["S3 Access<br>Logs"]
+    end
 
-    %% Relationships
-    AccessControl --> EntityRes
-    AccessControl --> S3In
-    AccessControl --> S3Out
+    %% Security layer relationships to core components
+    AccessControlLayer --->|"Govern<br>Access"| CoreServices
+    DataProtectionLayer --->|"Encrypt<br>Data"| CoreServices
+    NetworkLayer --->|"Control<br>Traffic"| CoreServices
+    CoreServices --->|"Generate<br>Events"| MonitoringLayer
 
-    DataProtection -.-> EntityRes
-    DataProtection -.-> S3In
-    DataProtection -.-> S3O
-    DataProtection -.-> S3Out
+    %% Classification for visual styling
+    classDef aws fill:#FF9900,stroke:#232F3E,color:#232F3E
+    classDef prereq fill:#1E8900,stroke:#232F3E,color:white
+    classDef security fill:#DD344C,stroke:#232F3E,color:white
+    classDef monitoring fill:#7AA116,stroke:#232F3E,color:white
+    classDef layer fill:none,stroke:#666,stroke-width:2px
 
-    NetworkSecurity -.-> S3In
-    NetworkSecurity -.-> S3Out
-
-    Monitoring -.-> EntityRes
-    Monitoring -.-> S3In
-    Monitoring -.-> S3Out
+    class EntityRes,S3In,S3Out,CoreServices aws
+    class GDC prereq
+    class AccessControlLayer,DataProtectionLayer,NetworkLayer,IAM,ROLES,SC,GluePerms,KMS,S3E,TLS,VPE,SG security
+    class MonitoringLayer,CT,CW,S3L monitoring
 ```
 
 ## Security Control Matrix
@@ -62,14 +70,17 @@ flowchart TD
 | **Access Control**  | Identity Management   | IAM roles with least privilege          | IAM Access Analyzer                     |
 |                     | Service Access        | Service Catalog permissions             | IAM policy review                       |
 |                     | Resource Access       | Resource-based policies                 | S3 bucket policy audit                  |
+|                     | Data Catalog Access   | Glue Data Catalog permissions           | Glue permissions review                 |
 | **Data Protection** | Encryption at Rest    | KMS with Customer Managed Key           | Bucket encryption setting verification  |
 |                     | Encryption in Transit | TLS 1.2+ for all communications         | TLS configuration validation            |
 |                     | Key Management        | Automatic key rotation                  | KMS key configuration audit             |
+|                     | Metadata Protection   | Glue table-level permissions            | Glue resource policy validation         |
 | **Network**         | Network Isolation     | VPC Endpoints for AWS services          | VPC configuration review                |
 |                     | Traffic Control       | Security Groups and NACLs               | Security Group rule validation          |
 | **Logging**         | API Activity          | CloudTrail for all API calls            | CloudTrail configuration check          |
 |                     | Data Access           | S3 Access Logs                          | Bucket logging configuration validation |
 |                     | Service Activity      | CloudWatch Logs for Entity Resolution   | Log group existence verification        |
+|                     | Catalog Activity      | CloudTrail for Glue operations          | Glue CloudTrail event verification      |
 | **Compliance**      | Data Classification   | Resource tagging for sensitivity levels | Tag policy validation                   |
 |                     | Retention Policy      | S3 lifecycle configuration              | Bucket lifecycle policy review          |
 
@@ -119,6 +130,23 @@ flowchart TD
         "logs:PutLogEvents"
       ],
       "Resource": "arn:aws:logs:*:*:log-group:/aws/entityresolution/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetDatabase",
+        "glue:GetDatabases",
+        "glue:GetTable",
+        "glue:GetTables",
+        "glue:GetPartition",
+        "glue:GetPartitions",
+        "glue:BatchGetPartition"
+      ],
+      "Resource": [
+        "arn:aws:glue:*:*:catalog",
+        "arn:aws:glue:*:*:database/${GlueDatabaseName}",
+        "arn:aws:glue:*:*:table/${GlueDatabaseName}/*"
+      ]
     }
   ]
 }

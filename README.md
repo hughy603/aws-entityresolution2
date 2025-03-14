@@ -16,7 +16,7 @@ Infrastructure as Code.
 | Governance        | Centralized management with access controls  | Improved compliance          |
 | Cost Optimization | Reduced development and management effort    | Lower TCO                    |
 
-## Architecture
+## Architecture Overview
 
 ```mermaid
 graph TD
@@ -44,6 +44,16 @@ graph TD
     class KMS,IAM security
     class CW monitoring
 ```
+
+## Documentation Guide
+
+| Document                                               | Purpose                                |
+| ------------------------------------------------------ | -------------------------------------- |
+| [Technical Guide](docs/technical-guide.md)             | Architecture and component details     |
+| [Implementation Guide](docs/implementation-guide.md)   | Step-by-step deployment instructions   |
+| [Security Guide](docs/security-guide.md)               | Security configuration requirements    |
+| [Troubleshooting Guide](docs/troubleshooting-guide.md) | Common issues and solutions            |
+| [Contributing](docs/CONTRIBUTING.md)                   | Guidelines for contributing to project |
 
 ## Core Components
 
@@ -73,6 +83,17 @@ graph TD
 - Fields must align with schema mapping configuration
 - S3 bucket access for input and output data
 
+## Quick Start
+
+1. Access Service Catalog and select the Entity Resolution product
+1. Configure CloudFormation parameters for your use case
+1. Provision and deploy resources
+1. Upload data to input S3 bucket
+1. Configure and execute matching workflows
+1. Access matching results in output S3 bucket
+
+For detailed instructions, see the [Implementation Guide](docs/implementation-guide.md).
+
 ## Security Essentials
 
 The primary security requirement is KMS integration:
@@ -91,32 +112,6 @@ Statement:
       - "kms:DescribeKey"
     Resource: "*"
 ```
-
-## Deployment Process
-
-1. Access Service Catalog and select the Entity Resolution product
-1. Configure CloudFormation parameters for your use case
-1. Provision and deploy resources
-1. Upload data to input S3 bucket
-1. Configure and execute matching workflows
-1. Access matching results in output S3 bucket
-
-## Documentation Guide
-
-| Document                                       | Purpose                              |
-| ---------------------------------------------- | ------------------------------------ |
-| [Implementation Guide](implementation-plan.md) | Step-by-step deployment instructions |
-| [Architecture Document](architecture.md)       | Technical architecture details       |
-| [Security Guide](security-considerations.md)   | Security configuration requirements  |
-
-## Troubleshooting
-
-| Issue              | Resolution                                               |
-| ------------------ | -------------------------------------------------------- |
-| KMS Access Denied  | Verify Entity Resolution service principal in key policy |
-| Workflow Failure   | Confirm data format matches schema configuration         |
-| Missing Results    | Check S3 permissions and bucket encryption settings      |
-| Performance Issues | Evaluate data volume and workflow configuration          |
 
 ## Implementation Challenges
 
